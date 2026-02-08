@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0028 // simplify collection definition, i dont like how it looks
 #pragma warning disable IDE0090 // using new() looks worse than new List() and that is more clear
@@ -48,6 +49,7 @@ namespace ShortTools.MagicContainer
         /// </summary>
         /// <param name="item">The item to be added</param>
         /// <returns>The index of the element in the collection.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int Add(T item)
         {
             data.Add(item);
@@ -64,6 +66,7 @@ namespace ShortTools.MagicContainer
             length++;
             return ID[length - 1];
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICollection<T>.Add(T item) => this.Add(item);
 
 
@@ -72,6 +75,7 @@ namespace ShortTools.MagicContainer
         /// </summary>
         /// <param name="index">The index of the item to be removed.</param>
         /// <returns>True if successful, false if not.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool RemoveAt(int index)
         {
             if (index >= length) { return false; }
