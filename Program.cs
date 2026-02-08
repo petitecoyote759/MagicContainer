@@ -81,6 +81,7 @@ namespace ShortTools.MagicContainer
             if (index >= length) { return false; }
 
             int dIndex = dataIndex[index]; // index of the data
+            if (dIndex >= length) { return false; } // already deleted
 
             length--;
 
@@ -104,6 +105,9 @@ namespace ShortTools.MagicContainer
         /// </summary>
         public void Clear()
         {
+#if DEBUG
+            Console.WriteLine("Clearing magic container.");
+#endif
             dataIndex.Clear();
             ID.Clear();
             data.Clear();
@@ -216,17 +220,45 @@ namespace ShortTools.MagicContainer
         T IEnumerator<T>.Current => this[eIndex];
         object? IEnumerator.Current => this[eIndex];
         bool IEnumerator.MoveNext() 
-        { 
-            eIndex++;
-            return eIndex < length;
+        {
+            while (true)
+            {
+                eIndex++;
+                if (eIndex >= length) { return false; }
+                if (dataIndex[eIndex] < length) { return true; }
+            } 
         }
         void IEnumerator.Reset() { eIndex = -1; }
 
 
-        public void Dispose() 
+
+
+
+        private bool disposed = false;
+        public void Dispose()
         {
-            this.Clear();
+#if DEBUG
+            Console.WriteLine("Non-explicit disposing.");
+#endif
+            Dispose(disposing: false);
+            GC.SuppressFinalize(this);
         }
+        public void Dispose(bool disposing)
+        {
+            if (!this.disposed)
+            {
+                if (disposing)
+                {
+#if DEBUG
+                    Console.WriteLine("Explicit disposing.");
+#endif
+                    this.Clear();
+                }
+                disposed = true;
+            }
+        }
+
+
 
         #endregion IEnumerator
 
@@ -379,15 +411,63 @@ namespace ShortTools.MagicContainer
 
     internal static class Tester
     {
+        private static bool running = true;
+        private static ManualResetEvent modifierCompleted = new ManualResetEvent(false);
+
         private static void Main()
         {
-            using SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
+            SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
             
             Console.WriteLine($"{container.ToString(true)}\n");
 
-            _ = container.RemoveAt(3);
+            Thread modifierThread = new Thread(new ThreadStart(() => ModifyContainer(container)));
+            modifierThread.Start();
+
+            Thread.Sleep(100);
+
+            int count = 0;
+            foreach (int value in container)
+            {
+                count++;
+                Console.WriteLine($"Value: {value}");
+            }
+            Console.WriteLine($"Count: {count}");
+
+            Thread.Sleep(100);
+
+            running = false;
+            modifierThread.Join();
+            modifierCompleted.WaitOne();
 
             Console.WriteLine($"{container.ToString(true)}\n");
+            
+            Console.WriteLine("Ending");
+            container.Dispose();
         }
+
+#pragma warning disable CA5394 // use cryptographically secure random, not required here
+        private static void ModifyContainer(SMContainer<int> container)
+        {
+            Random random = new Random();
+
+            bool adding = false;
+
+            while (running)
+            {
+                if (adding)
+                {
+                    _ = container.Add(random.Next(100));
+                }
+                else
+                {
+                    int index = random.Next(container.Length);
+                    _ = container.RemoveAt(index);
+                }
+                adding = !adding;
+            }
+            modifierCompleted.Set();
+            Console.WriteLine("Completed");
+        }
+#pragma warning restore CA5394
     }
 }
