@@ -6,18 +6,30 @@ using System.Collections;
 #pragma warning disable IDE0025 // property without body, easier to understand like that
 #pragma warning disable IDE0022 // method without body, usually bad but here is just used to forward to another method
 #pragma warning disable IDE0003 // remove the this from this.Function, in some cases this.Function looks better
+#pragma warning disable CA1710 // Should have stack or collection after, its a container and i think that is a better more clear name
+#pragma warning disable CA1515 // The class should be internal, this is to be published so it must be public
+#pragma warning disable CA1805 // Variables initialised to default value. This makes it clear to read.
 
 namespace ShortTools.MagicContainer
 {
+    /// <summary>
+    /// A class inspired by "Pezzza's Work" on youtube. This container has an O(1) access, delete, and add ability. The cost is that this is more 
+    /// memory intensive than other containers, with an extra 2 integers per element.
+    /// </summary>
+    /// <typeparam name="T">The type contained in the container.</typeparam>
     public sealed class SMContainer<T> : ICollection<T>, ICloneable, IEnumerator<T>, IList<T>
     {
         private List<int> dataIndex = new List<int>();
         private List<int> ID = new List<int>();
         private List<T> data = new List<T>();
 
+        /// <summary>
+        /// The length of the container
+        /// </summary>
         public int Length { get => length; }
         private int length = 0;
 
+        // length of the dataIndex and ID lists as they never go down.
         private int maxLength = 0;
 
 
@@ -112,18 +124,18 @@ namespace ShortTools.MagicContainer
         /// <summary>
         /// Copies the collections data to the target array.
         /// </summary>
-        /// <param name="target">Array to be copied to.</param>
-        /// <param name="index">Starting index.</param>
+        /// <param name="array">Array to be copied to.</param>
+        /// <param name="arrayIndex">Starting index.</param>
         /// <exception cref="ArgumentException">Thrown if the given array was too small.</exception>
-        public void CopyTo(T[] target, int index)
+        public void CopyTo(T[] array, int arrayIndex)
         {
-            ArgumentNullException.ThrowIfNull(target);
-            ArgumentOutOfRangeException.ThrowIfLessThan(index, 0);
-            if (target.Length < index + length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {target.Length}, Collection Length : {length}"); }
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfLessThan(arrayIndex, 0);
+            if (array.Length < arrayIndex + length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {length}"); }
 
-            for (int i = index; i < length; i++)
+            for (int i = arrayIndex; i < length; i++)
             {
-                target[i] = data[i - index];
+                array[i] = data[i - arrayIndex];
             }
         }
 
@@ -272,6 +284,8 @@ namespace ShortTools.MagicContainer
 
         public SMContainer(ICollection<T> collection) 
         { 
+            if (collection is null) { return; }
+
             int length = collection.Count;
             for (int i = 0; i < length; i++)
             {
@@ -363,7 +377,7 @@ namespace ShortTools.MagicContainer
     {
         private static void Main()
         {
-            SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
+            using SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
             
             Console.WriteLine($"{container.ToString(true)}\n");
 
