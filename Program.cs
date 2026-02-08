@@ -13,7 +13,7 @@ using System.Collections;
 namespace ShortTools.MagicContainer
 {
     /// <summary>
-    /// A class inspired by "Pezzza's Work" on youtube. This container has an O(1) access, delete, and add ability. The cost is that this is more 
+    /// A class inspired by "Pezzza's Work" on youtube. This container has an O(1) access, delete, and add functionality. The cost is that this is more 
     /// memory intensive than other containers, with an extra 2 integers per element.
     /// </summary>
     /// <typeparam name="T">The type contained in the container.</typeparam>
