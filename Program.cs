@@ -408,11 +408,11 @@ namespace ShortTools.MagicContainer
 
 
 
-
+#pragma warning disable CA1303
     internal static class Tester
     {
         private static bool running = true;
-        private static ManualResetEvent modifierCompleted = new ManualResetEvent(false);
+        private static readonly ManualResetEvent modifierCompleted = new ManualResetEvent(false);
 
         private static void Main()
         {
@@ -437,7 +437,7 @@ namespace ShortTools.MagicContainer
 
             running = false;
             modifierThread.Join();
-            modifierCompleted.WaitOne();
+            _ = modifierCompleted.WaitOne();
 
             Console.WriteLine($"{container.ToString(true)}\n");
             
@@ -465,7 +465,7 @@ namespace ShortTools.MagicContainer
                 }
                 adding = !adding;
             }
-            modifierCompleted.Set();
+            _ = modifierCompleted.Set();
             Console.WriteLine("Completed");
         }
 #pragma warning restore CA5394
