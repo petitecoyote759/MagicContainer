@@ -1,6 +1,6 @@
-﻿using System.Text;
-using System.Collections;
+﻿using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 #pragma warning disable IDE0028 // simplify collection definition, i dont like how it looks
 #pragma warning disable IDE0090 // using new() looks worse than new List() and that is more clear
@@ -11,6 +11,10 @@ using System.Runtime.CompilerServices;
 #pragma warning disable CA1515 // The class should be internal, this is to be published so it must be public
 #pragma warning disable CA1805 // Variables initialised to default value. This makes it clear to read.
 
+#if DEBUG
+#pragma warning disable CA1303 // Use a string dictionary rather than hard coding messages, not relevant in debugging
+#endif
+
 namespace ShortTools.MagicContainer
 {
     /// <summary>
@@ -20,24 +24,24 @@ namespace ShortTools.MagicContainer
     /// <typeparam name="T">The type contained in the container.</typeparam>
     public sealed class SMContainer<T> : ICollection<T>, ICloneable, IEnumerator<T>, IList<T>
     {
-        private List<int> dataIndex = new List<int>();
-        private List<int> ID = new List<int>();
-        private List<T> data = new List<T>();
+        private List<int> _dataIndex = new List<int>();
+        private List<int> _ID = new List<int>();
+        private List<T> _data = new List<T>();
 
         /// <summary>
         /// The length of the container
         /// </summary>
-        public int Length { get => length; }
-        private int length = 0;
+        public int Length { get => _length; }
+        private int _length = 0;
 
         // length of the dataIndex and ID lists as they never go down.
-        private int maxLength = 0;
+        private int _maxLength = 0;
 
 
         public T this[int index]
         {
-            get => data[dataIndex[index]];
-            set => data[dataIndex[index]] = value;
+            get => _data[_dataIndex[index]];
+            set => _data[_dataIndex[index]] = value;
         }
 
 
@@ -52,19 +56,19 @@ namespace ShortTools.MagicContainer
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int Add(T item)
         {
-            data.Add(item);
+            _data.Add(item);
 
             // length will now point to the next item
-            if (length >= maxLength)
+            if (_length >= _maxLength)
             {
-                ID.Add(length);
-                dataIndex.Add(length);
+                _ID.Add(_length);
+                _dataIndex.Add(_length);
                 // add the stuff to dataIndex and ID
-                maxLength++;
+                _maxLength++;
             }
 
-            length++;
-            return ID[length - 1];
+            _length++;
+            return _ID[_length - 1];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICollection<T>.Add(T item) => this.Add(item);
@@ -78,22 +82,22 @@ namespace ShortTools.MagicContainer
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool RemoveAt(int index)
         {
-            if (index >= length) { return false; }
+            if (index >= _length) { return false; }
 
-            int dIndex = dataIndex[index]; // index of the data
-            if (dIndex >= length) { return false; } // already deleted
+            int dIndex = _dataIndex[index]; // index of the data
+            if (dIndex >= _length) { return false; } // already deleted
 
-            length--;
+            _length--;
 
             // now to swap and pop, but first swapping
 
-            data[dIndex] = data[length];
-            (ID[length], ID[dIndex]) = (ID[dIndex], ID[length]); // swap IDs
+            _data[dIndex] = _data[_length];
+            (_ID[_length], _ID[dIndex]) = (_ID[dIndex], _ID[_length]); // swap IDs
 
             // pop
             // now we need to update the data index at ID[length] to be correct, and the one at ID[dIndex] by swapping
-            (dataIndex[ID[length]], dataIndex[ID[dIndex]]) = (dataIndex[ID[dIndex]], dataIndex[ID[length]]); // swap data indexes
-            data.RemoveAt(length);
+            (_dataIndex[_ID[_length]], _dataIndex[_ID[dIndex]]) = (_dataIndex[_ID[dIndex]], _dataIndex[_ID[_length]]); // swap data indexes
+            _data.RemoveAt(_length);
 
             return true;
         }
@@ -108,11 +112,11 @@ namespace ShortTools.MagicContainer
 #if DEBUG
             Console.WriteLine("Clearing magic container.");
 #endif
-            dataIndex.Clear();
-            ID.Clear();
-            data.Clear();
-            length = 0;
-            maxLength = 0;
+            _dataIndex.Clear();
+            _ID.Clear();
+            _data.Clear();
+            _length = 0;
+            _maxLength = 0;
         }
 
 
@@ -139,11 +143,11 @@ namespace ShortTools.MagicContainer
         {
             ArgumentNullException.ThrowIfNull(array);
             ArgumentOutOfRangeException.ThrowIfLessThan(arrayIndex, 0);
-            if (array.Length < arrayIndex + length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {length}"); }
+            if (array.Length < arrayIndex + _length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {_length}"); }
 
-            for (int i = arrayIndex; i < length; i++)
+            for (int i = arrayIndex; i < _length; i++)
             {
-                array[i] = data[i - arrayIndex];
+                array[i] = _data[i - arrayIndex];
             }
         }
 
@@ -157,11 +161,11 @@ namespace ShortTools.MagicContainer
         /// <returns>True if successfully removed, false if not.</returns>
         public bool Remove(T item)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < _length; i++)
             {
-                if (item?.Equals(data[i]) == true)
+                if (item?.Equals(_data[i]) == true)
                 {
-                    _ = RemoveAt(ID[i]);
+                    _ = RemoveAt(_ID[i]);
                     return true;
                 }
             }
@@ -172,12 +176,12 @@ namespace ShortTools.MagicContainer
 
 
         [Obsolete("Do not use this function, use .Length instead.", error: false)]
-        int ICollection<T>.Count => length;
+        int ICollection<T>.Count => _length;
 
 
         public bool IsReadOnly => false;
 
-        
+
 
 
 
@@ -203,9 +207,9 @@ namespace ShortTools.MagicContainer
         {
             return new SMContainer<T>()
             {
-                dataIndex = this.dataIndex,
-                ID = this.ID,
-                data = this.data
+                _dataIndex = this._dataIndex,
+                _ID = this._ID,
+                _data = this._data
             };
         }
         object ICloneable.Clone() { return this.Clone(); }
@@ -219,14 +223,14 @@ namespace ShortTools.MagicContainer
 
         T IEnumerator<T>.Current => this[eIndex];
         object? IEnumerator.Current => this[eIndex];
-        bool IEnumerator.MoveNext() 
+        bool IEnumerator.MoveNext()
         {
             while (true)
             {
                 eIndex++;
-                if (eIndex >= length) { return false; }
-                if (dataIndex[eIndex] < length) { return true; }
-            } 
+                if (eIndex >= _length) { return false; }
+                if (_dataIndex[eIndex] < _length) { return true; }
+            }
         }
         void IEnumerator.Reset() { eIndex = -1; }
 
@@ -272,11 +276,11 @@ namespace ShortTools.MagicContainer
         /// <returns>Index of the item, or -1 if it is not in the collection.</returns>
         public int IndexOf(T target)
         {
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < _length; i++)
             {
-                if (target?.Equals(data[i]) == true)
+                if (target?.Equals(_data[i]) == true)
                 {
-                    return ID[i];
+                    return _ID[i];
                 }
             }
             return -1;
@@ -290,11 +294,11 @@ namespace ShortTools.MagicContainer
         /// <exception cref="ArgumentOutOfRangeException">Thrown when index > length</exception>
         public void Insert(int index, T item)
         {
-            if (index < length)
+            if (index < _length)
             {
-                data[dataIndex[index]] = item;
+                _data[_dataIndex[index]] = item;
             }
-            else if (index == length)
+            else if (index == _length)
             {
                 _ = Add(item);
             }
@@ -318,8 +322,8 @@ namespace ShortTools.MagicContainer
 
         public SMContainer() { }
 
-        public SMContainer(ICollection<T> collection) 
-        { 
+        public SMContainer(ICollection<T> collection)
+        {
             if (collection is null) { return; }
 
             int length = collection.Count;
@@ -341,12 +345,12 @@ namespace ShortTools.MagicContainer
         {
             StringBuilder builder = new StringBuilder();
             _ = builder.Append('[');
-            for (int i = 0; i < length - 1; i++)
+            for (int i = 0; i < _length - 1; i++)
             {
-                _ = builder.Append(data[i]);
+                _ = builder.Append(_data[i]);
                 _ = builder.Append(", ");
             }
-            if (length > 0) { _ = builder.Append(data[length - 1]); }
+            if (_length > 0) { _ = builder.Append(_data[_length - 1]); }
             _ = builder.Append(']');
 
             return builder.ToString();
@@ -359,22 +363,22 @@ namespace ShortTools.MagicContainer
             StringBuilder builder = new StringBuilder();
 
             _ = builder.Append('[');
-            for (int i = 0; i < maxLength - 1; i++)
+            for (int i = 0; i < _maxLength - 1; i++)
             {
-                _ = builder.Append(dataIndex[i]);
+                _ = builder.Append(_dataIndex[i]);
                 _ = builder.Append(", ");
             }
-            if (maxLength > 0) { _ = builder.Append(dataIndex[maxLength - 1]); }
+            if (_maxLength > 0) { _ = builder.Append(_dataIndex[_maxLength - 1]); }
             _ = builder.AppendLine("]");
-            
+
 
             _ = builder.Append('[');
-            for (int i = 0; i < maxLength - 1; i++)
+            for (int i = 0; i < _maxLength - 1; i++)
             {
-                _ = builder.Append(ID[i]);
+                _ = builder.Append(_ID[i]);
                 _ = builder.Append(", ");
             }
-            if (maxLength > 0) { _ = builder.Append(ID[maxLength - 1]); }
+            if (_maxLength > 0) { _ = builder.Append(_ID[_maxLength - 1]); }
             _ = builder.AppendLine("]");
 
 
@@ -417,7 +421,7 @@ namespace ShortTools.MagicContainer
         private static void Main()
         {
             SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
-            
+
             Console.WriteLine($"{container.ToString(true)}\n");
 
             Thread modifierThread = new Thread(new ThreadStart(() => ModifyContainer(container)));
@@ -440,7 +444,7 @@ namespace ShortTools.MagicContainer
             _ = modifierCompleted.WaitOne();
 
             Console.WriteLine($"{container.ToString(true)}\n");
-            
+
             Console.WriteLine("Ending");
             container.Dispose();
         }
