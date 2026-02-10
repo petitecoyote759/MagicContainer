@@ -10,4 +10,4 @@ Note that if you remove an object at index i, that index will be a deleted index
 
 Iterating through this collection is a thread safe operation, allowing you to iterate through it while another thread modifies it.
 
-Any suggestions please let me know at matthew.short.nh@gmail.com
+Any suggestions please let me know at shortie.coding@gmail.com
