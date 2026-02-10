@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -22,7 +23,7 @@ namespace ShortTools.MagicContainer
     /// memory intensive than other containers, with an extra 2 integers per element.
     /// </summary>
     /// <typeparam name="T">The type contained in the container.</typeparam>
-    public sealed class SMContainer<T> : ICollection<T>, ICloneable, IEnumerator<T>, IList<T>
+    public sealed class SMContainer<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable, ICloneable, IEnumerator<T>, IList<T>, IList
     {
         private List<int> _dataIndex = new List<int>();
         private List<int> _ID = new List<int>();
@@ -72,6 +73,10 @@ namespace ShortTools.MagicContainer
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICollection<T>.Add(T item) => this.Add(item);
+        int IList.Add(object? value)
+        {
+            return value is T item ? this.Add(item) : -1;
+        }
 
 
         /// <summary>
@@ -100,6 +105,11 @@ namespace ShortTools.MagicContainer
             _data.RemoveAt(_length);
 
             return true;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IList.RemoveAt(int index)
+        {
+            _ = RemoveAt(index);
         }
 
 
@@ -130,6 +140,10 @@ namespace ShortTools.MagicContainer
         {
             return this.IndexOf(value) != -1;
         }
+        bool IList.Contains(object? value)
+        {
+            return value is T item && this.Contains(item);
+        }
 
 
 
@@ -148,6 +162,17 @@ namespace ShortTools.MagicContainer
             for (int i = arrayIndex; i < _length; i++)
             {
                 array[i] = _data[i - arrayIndex];
+            }
+        }
+        public void CopyTo(Array array, int index)
+        {
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfLessThan(index, 0);
+            if (array.Length < index + _length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {_length}"); }
+
+            for (int i = index; i < _length; i++)
+            {
+                array.SetValue(_data[i - index], i);
             }
         }
 
@@ -171,12 +196,22 @@ namespace ShortTools.MagicContainer
             }
             return false;
         }
+        void IList.Remove(object? value)
+        {
+            if (value is T item) { _ = this.Remove(item); }
+        }
 
 
 
 
         [Obsolete("Do not use this function, use .Length instead.", error: false)]
         int ICollection<T>.Count => _length;
+        [Obsolete("Do not use this function, use .Length instead.", error: false)]
+        int ICollection.Count => _length;
+
+        bool ICollection.IsSynchronized => true;
+
+        object ICollection.SyncRoot => this;
 
 
         public bool IsReadOnly => false;
@@ -285,6 +320,10 @@ namespace ShortTools.MagicContainer
             }
             return -1;
         }
+        int IList.IndexOf(object? value)
+        {
+            return value is T item ? this.IndexOf(item) : -1;
+        }
 
         /// <summary>
         /// Inserts the given item, at the index. If the index is above the length it will not add it.
@@ -305,6 +344,10 @@ namespace ShortTools.MagicContainer
             throw new ArgumentOutOfRangeException($"Parameter index ({index}) was out of range.");
             // too far out, ignore it
         }
+        void IList.Insert(int index, object? value)
+        {
+            if (value is T item) { this.Insert(index, item); }
+        }
 
         /// <summary>
         /// Removes the item at the given index.
@@ -315,6 +358,25 @@ namespace ShortTools.MagicContainer
             _ = this.RemoveAt(index);
         }
 
+
+        public bool IsFixedSize => false;
+
+        object? IList.this[int index] 
+        { 
+            get => this[index];
+            set
+            {
+                if (value is T item)
+                {
+                    this[index] = item;
+                    return;
+                }
+                throw new ArgumentException($"Argument of type {value?.GetType()?.ToString() ?? "Null"} was the incorrect type");
+            }
+        }
+
+
+
         #endregion IList
 
 
@@ -322,19 +384,140 @@ namespace ShortTools.MagicContainer
 
         public SMContainer() { }
 
-        public SMContainer(ICollection<T> collection)
+        public SMContainer(IEnumerable<T> collection)
         {
             if (collection is null) { return; }
 
-            int length = collection.Count;
-            for (int i = 0; i < length; i++)
+            foreach (T item in collection)
             {
-                _ = this.Add(collection.ElementAt(i));
+                _ = this.Add(item);
             }
         }
 
 
         #endregion Constructors
+
+
+
+
+        #region AdditionalFunctions
+        
+        public T[] ToArray()
+        {
+            T[] outputArray = new T[_length];
+            for (int i = 0; i < _length; i++)
+            {
+                outputArray[i] = _data[i];
+            }
+            return outputArray;
+        }
+        
+        public bool RemoveRange(int start, int end)
+        {
+            if (end < start || end >= _length) { return false; }
+        
+            for (int i = start; i < end; i++)
+            {
+                _ = this.RemoveAt(i);
+            }
+            return true;
+        }
+        
+        public void RemoveAll(Predicate<T> specifier) // return count
+        {
+            ArgumentNullException.ThrowIfNull(specifier);
+
+            for (int i = 0; i < _length; i++)
+            {
+                if (specifier(this[i]))
+                {
+                    _ = this.RemoveAt(i);
+                }
+            }
+        }
+        
+        public T Last(out int index)
+        {
+            index = _length - 1;
+            return this[index];
+        }
+        
+        public SMContainer<T> GetRange(int start, int end)
+        {
+            return new SMContainer<T>(this.GetRangeEnumerable(start, end));
+        }
+        
+        public IEnumerable<T> GetRangeEnumerable(int start, int end)
+        {
+            for (int i = start; i < end; i++)
+            {
+                yield return this[i];   
+            }
+        }
+        
+        public SMContainer<T> FindAll(Predicate<T> specifier)
+        {
+            ArgumentNullException.ThrowIfNull(specifier);
+
+            SMContainer<T> output = new SMContainer<T>();
+            
+            for (int i = 0; i < _length; i++)
+            {
+                T item = this[i];
+                if (specifier(item))
+                {
+                    _ = output.Add(item);
+                }
+            }
+            return output;
+        }
+        
+        public bool Exists(Predicate<T> specifier)
+        {
+            ArgumentNullException.ThrowIfNull(specifier);
+
+            foreach (T item in _data)
+            {
+                if (specifier(item))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        public void AddRange(IEnumerable<T> items)
+        {
+            ArgumentNullException.ThrowIfNull(items);
+
+            foreach (T item in items)
+            {
+                _ = this.Add(item);
+            }
+        }
+        
+        public SMContainer<T2> ConvertAll<T2>(Converter<T, T2> converter)
+        {
+            return new SMContainer<T2>() { _dataIndex = this._dataIndex, _ID = this._ID, _data = this._data.ConvertAll<T2>(converter) };
+        }
+        
+        
+
+        
+        
+        
+        
+        #endregion AdditionalFunctions
+
+
+
+
+
+
+
+
+
+
 
 
 
