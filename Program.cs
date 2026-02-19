@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -23,7 +24,8 @@ namespace ShortTools.MagicContainer
     /// memory intensive than other containers, with an extra 2 integers per element.
     /// </summary>
     /// <typeparam name="T">The type contained in the container.</typeparam>
-    public sealed class SMContainer<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable, ICloneable, IEnumerator<T>, IList<T>, IList
+    [DebuggerDisplay("Length : {_length}, _maxLength : {_maxLength}, Data : {string.Join(',', _data)}")] //string.Join(",", Client)
+    public sealed class SMContainer<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable, ICloneable, IList<T>, IList
     {
         private List<int> _dataIndex = new List<int>();
         private List<int> _ID = new List<int>();
@@ -219,20 +221,6 @@ namespace ShortTools.MagicContainer
 
 
 
-
-
-
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return this;
-        }
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            // call the generic version of the method
-            return this.GetEnumerator();
-        }
-
         #endregion ICollection
 
 
@@ -252,54 +240,21 @@ namespace ShortTools.MagicContainer
         #endregion IClonable
 
 
-        #region IEnumerator
+        #region IEnumerable
 
-        private int eIndex = -1; // enumerator index;
-
-        T IEnumerator<T>.Current => this[eIndex];
-        object? IEnumerator.Current => this[eIndex];
-        bool IEnumerator.MoveNext()
+        public IEnumerator<T> GetEnumerator()
         {
-            while (true)
-            {
-                eIndex++;
-                if (eIndex >= _length) { return false; }
-                if (_dataIndex[eIndex] < _length) { return true; }
-            }
+            return new SMContainerEnumerator(this);
         }
-        void IEnumerator.Reset() { eIndex = -1; }
-
-
-
-
-
-        private bool disposed = false;
-        public void Dispose()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-#if DEBUG
-            Console.WriteLine("Non-explicit disposing.");
-#endif
-            Dispose(disposing: false);
-            GC.SuppressFinalize(this);
-        }
-        public void Dispose(bool disposing)
-        {
-            if (!this.disposed)
-            {
-                if (disposing)
-                {
-#if DEBUG
-                    Console.WriteLine("Explicit disposing.");
-#endif
-                    this.Clear();
-                }
-                disposed = true;
-            }
+            // call the generic version of the method
+            return this.GetEnumerator();
         }
 
 
 
-        #endregion IEnumerator
+        #endregion IEnumerable
 
 
         #region IList
@@ -500,17 +455,80 @@ namespace ShortTools.MagicContainer
         {
             return new SMContainer<T2>() { _dataIndex = this._dataIndex, _ID = this._ID, _data = this._data.ConvertAll<T2>(converter) };
         }
-        
-        
 
-        
-        
-        
-        
+
+
+
+
+
+
         #endregion AdditionalFunctions
 
 
 
+
+
+
+
+
+
+
+        #region IEnumerator
+
+        public sealed class SMContainerEnumerator : IEnumerator, IEnumerator<T>
+        {
+            private int eIndex = -1; // enumerator index;
+            SMContainer<T>? instance;
+
+            public SMContainerEnumerator(SMContainer<T> instance)
+            {
+                this.instance = instance;
+            }
+
+#pragma warning disable CS8602 // instance will never be null unless calling post disposal
+            T IEnumerator<T>.Current => instance[eIndex];
+            object? IEnumerator.Current => instance[eIndex];
+            bool IEnumerator.MoveNext()
+            {
+                while (true)
+                {
+                    eIndex++;
+                    if (eIndex >= instance._length) { return false; }
+                    if (instance._dataIndex[eIndex] < instance._length) { return true; }
+                }
+            }
+            void IEnumerator.Reset() { eIndex = -1; }
+#pragma warning restore CS8602 
+
+
+
+
+            private bool disposed = false;
+            public void Dispose()
+            {
+#if DEBUG
+                Console.WriteLine("Non-explicit disposing.");
+#endif
+                Dispose(disposing: false);
+                GC.SuppressFinalize(this);
+            }
+            public void Dispose(bool disposing)
+            {
+                if (!this.disposed)
+                {
+                    if (disposing)
+                    {
+#if DEBUG
+                        Console.WriteLine("Explicit disposing.");
+#endif
+                    }
+                    instance = null;
+                    disposed = true;
+                }
+            }
+        }
+
+        #endregion IEnumerator
 
 
 
@@ -620,6 +638,11 @@ namespace ShortTools.MagicContainer
             }
             Console.WriteLine($"Count: {count}");
 
+            foreach (int value in container)
+            {
+                Console.WriteLine($"Value: {value}");
+            }
+
             Thread.Sleep(100);
 
             running = false;
@@ -629,7 +652,6 @@ namespace ShortTools.MagicContainer
             Console.WriteLine($"{container.ToString(true)}\n");
 
             Console.WriteLine("Ending");
-            container.Dispose();
         }
 
 #pragma warning disable CA5394 // use cryptographically secure random, not required here
