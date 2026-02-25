@@ -27,24 +27,24 @@ namespace ShortTools.MagicContainer
     [DebuggerDisplay("Length : {_length}, _maxLength : {_maxLength}, Data : {string.Join(',', _data)}")] //string.Join(",", Client)
     public sealed class SMContainer<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable, ICloneable, IList<T>, IList
     {
-        private List<int> _dataIndex = new List<int>();
-        private List<int> _ID = new List<int>();
-        private List<T> _data = new List<T>();
+        private List<int> dataIndex = new List<int>();
+        private List<int> ID = new List<int>();
+        private List<T> data = new List<T>();
 
         /// <summary>
         /// The length of the container
         /// </summary>
-        public int Length { get => _length; }
-        private int _length = 0;
+        public int Length { get => length; }
+        private int length = 0;
 
         // length of the dataIndex and ID lists as they never go down.
-        private int _maxLength = 0;
+        private int maxLength = 0;
 
 
         public T this[int index]
         {
-            get => _data[_dataIndex[index]];
-            set => _data[_dataIndex[index]] = value;
+            get => data[dataIndex[index]];
+            set => data[dataIndex[index]] = value;
         }
 
 
@@ -59,19 +59,22 @@ namespace ShortTools.MagicContainer
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public int Add(T item)
         {
-            _data.Add(item);
-
             // length will now point to the next item
-            if (_length >= _maxLength)
+            if (length >= maxLength)
             {
-                _ID.Add(_length);
-                _dataIndex.Add(_length);
+                data.Add(item);
+                ID.Add(length);
+                dataIndex.Add(length);
                 // add the stuff to dataIndex and ID
-                _maxLength++;
+                maxLength++;
+            }
+            else
+            {
+                data[length] = item;
             }
 
-            _length++;
-            return _ID[_length - 1];
+            length++;
+            return ID[length - 1];
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICollection<T>.Add(T item) => this.Add(item);
@@ -89,22 +92,22 @@ namespace ShortTools.MagicContainer
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool RemoveAt(int index)
         {
-            if (index >= _maxLength) { return false; }
+            if (index >= maxLength) { return false; }
 
-            int dIndex = _dataIndex[index]; // index of the data
-            if (dIndex >= _length) { return false; } // already deleted
+            int dIndex = dataIndex[index]; // index of the data
+            if (dIndex >= length) { return false; } // already deleted
 
-            _length--;
+            length--;
 
             // now to swap and pop, but first swapping
 
-            _data[dIndex] = _data[_length];
-            (_ID[_length], _ID[dIndex]) = (_ID[dIndex], _ID[_length]); // swap IDs
+            data[dIndex] = data[length];
+            (ID[length], ID[dIndex]) = (ID[dIndex], ID[length]); // swap IDs
 
             // pop
             // now we need to update the data index at ID[length] to be correct, and the one at ID[dIndex] by swapping
-            (_dataIndex[_ID[_length]], _dataIndex[_ID[dIndex]]) = (_dataIndex[_ID[dIndex]], _dataIndex[_ID[_length]]); // swap data indexes
-            _data.RemoveAt(_length);
+            (dataIndex[ID[length]], dataIndex[ID[dIndex]]) = (dataIndex[ID[dIndex]], dataIndex[ID[length]]); // swap data indexes
+            //data.RemoveAt(length);
 
             return true;
         }
@@ -124,11 +127,11 @@ namespace ShortTools.MagicContainer
 #if DEBUG
             Console.WriteLine("Clearing magic container.");
 #endif
-            _dataIndex.Clear();
-            _ID.Clear();
-            _data.Clear();
-            _length = 0;
-            _maxLength = 0;
+            dataIndex.Clear();
+            ID.Clear();
+            data.Clear();
+            length = 0;
+            maxLength = 0;
         }
 
 
@@ -159,22 +162,22 @@ namespace ShortTools.MagicContainer
         {
             ArgumentNullException.ThrowIfNull(array);
             ArgumentOutOfRangeException.ThrowIfLessThan(arrayIndex, 0);
-            if (array.Length < arrayIndex + _length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {_length}"); }
+            if (array.Length < arrayIndex + length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {length}"); }
 
-            for (int i = arrayIndex; i < _length; i++)
+            for (int i = arrayIndex; i < length; i++)
             {
-                array[i] = _data[i - arrayIndex];
+                array[i] = data[i - arrayIndex];
             }
         }
         public void CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
             ArgumentOutOfRangeException.ThrowIfLessThan(index, 0);
-            if (array.Length < index + _length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {_length}"); }
+            if (array.Length < index + length) { throw new ArgumentException($"Given array was of an insufficient size. Array Length : {array.Length}, Collection Length : {length}"); }
 
-            for (int i = index; i < _length; i++)
+            for (int i = index; i < length; i++)
             {
-                array.SetValue(_data[i - index], i);
+                array.SetValue(data[i - index], i);
             }
         }
 
@@ -188,12 +191,12 @@ namespace ShortTools.MagicContainer
         /// <returns>True if successfully removed, false if not.</returns>
         public bool Remove(T item)
         {
-            for (int i = 0; i < _length; i++)
+            for (int i = 0; i < length; i++)
             {
-                if (_dataIndex[i] >= _length) { continue; } // been deleted
-                if (item?.Equals(_data[i]) == true)
+                if (dataIndex[i] >= length) { continue; } // been deleted
+                if (item?.Equals(data[i]) == true)
                 {
-                    _ = RemoveAt(_ID[i]);
+                    _ = RemoveAt(ID[i]);
                     return true;
                 }
             }
@@ -208,9 +211,9 @@ namespace ShortTools.MagicContainer
 
 
         [Obsolete("Do not use this function, use .Length instead.", error: false)]
-        int ICollection<T>.Count => _length;
+        int ICollection<T>.Count => length;
         [Obsolete("Do not use this function, use .Length instead.", error: false)]
-        int ICollection.Count => _length;
+        int ICollection.Count => length;
 
         bool ICollection.IsSynchronized => true;
 
@@ -231,9 +234,9 @@ namespace ShortTools.MagicContainer
         {
             return new SMContainer<T>()
             {
-                _dataIndex = this._dataIndex,
-                _ID = this._ID,
-                _data = this._data
+                dataIndex = this.dataIndex,
+                ID = this.ID,
+                data = this.data
             };
         }
         object ICloneable.Clone() { return this.Clone(); }
@@ -267,11 +270,11 @@ namespace ShortTools.MagicContainer
         /// <returns>Index of the item, or -1 if it is not in the collection.</returns>
         public int IndexOf(T target)
         {
-            for (int i = 0; i < _length; i++)
+            for (int i = 0; i < length; i++)
             {
-                if (target?.Equals(_data[i]) == true)
+                if (target?.Equals(data[i]) == true)
                 {
-                    return _ID[i];
+                    return ID[i];
                 }
             }
             return -1;
@@ -289,11 +292,11 @@ namespace ShortTools.MagicContainer
         /// <exception cref="ArgumentOutOfRangeException">Thrown when index > length</exception>
         public void Insert(int index, T item)
         {
-            if (index < _length)
+            if (index < length)
             {
-                _data[_dataIndex[index]] = item;
+                data[dataIndex[index]] = item;
             }
-            else if (index == _length)
+            else if (index == length)
             {
                 _ = Add(item);
             }
@@ -360,17 +363,17 @@ namespace ShortTools.MagicContainer
         
         public T[] ToArray()
         {
-            T[] outputArray = new T[_length];
-            for (int i = 0; i < _length; i++)
+            T[] outputArray = new T[length];
+            for (int i = 0; i < length; i++)
             {
-                outputArray[i] = _data[i];
+                outputArray[i] = data[i];
             }
             return outputArray;
         }
         
         public bool RemoveRange(int start, int end)
         {
-            if (end < start || end >= _length) { return false; }
+            if (end < start || end >= length) { return false; }
         
             for (int i = start; i < end; i++)
             {
@@ -383,7 +386,7 @@ namespace ShortTools.MagicContainer
         {
             ArgumentNullException.ThrowIfNull(specifier);
 
-            for (int i = 0; i < _length; i++)
+            for (int i = 0; i < length; i++)
             {
                 if (specifier(this[i]))
                 {
@@ -394,7 +397,7 @@ namespace ShortTools.MagicContainer
         
         public T Last(out int index)
         {
-            index = _length - 1;
+            index = length - 1;
             return this[index];
         }
         
@@ -417,7 +420,7 @@ namespace ShortTools.MagicContainer
 
             SMContainer<T> output = new SMContainer<T>();
             
-            for (int i = 0; i < _length; i++)
+            for (int i = 0; i < length; i++)
             {
                 T item = this[i];
                 if (specifier(item))
@@ -432,7 +435,7 @@ namespace ShortTools.MagicContainer
         {
             ArgumentNullException.ThrowIfNull(specifier);
 
-            foreach (T item in _data)
+            foreach (T item in data)
             {
                 if (specifier(item))
                 {
@@ -454,7 +457,7 @@ namespace ShortTools.MagicContainer
         
         public SMContainer<T2> ConvertAll<T2>(Converter<T, T2> converter)
         {
-            return new SMContainer<T2>() { _dataIndex = this._dataIndex, _ID = this._ID, _data = this._data.ConvertAll<T2>(converter) };
+            return new SMContainer<T2>() { dataIndex = this.dataIndex, ID = this.ID, data = this.data.ConvertAll<T2>(converter) };
         }
 
 
@@ -494,8 +497,8 @@ namespace ShortTools.MagicContainer
                 while (true)
                 {
                     eIndex++;
-                    if (eIndex >= instance._length) { return false; }
-                    if (instance._dataIndex[eIndex] < instance._length) { return true; }
+                    if (eIndex >= instance.length) { return false; }
+                    if (instance.dataIndex[eIndex] < instance.length) { return true; }
                 }
             }
             void IEnumerator.Reset() { eIndex = -1; }
@@ -547,12 +550,12 @@ namespace ShortTools.MagicContainer
         {
             StringBuilder builder = new StringBuilder();
             _ = builder.Append('[');
-            for (int i = 0; i < _length - 1; i++)
+            for (int i = 0; i < length - 1; i++)
             {
-                _ = builder.Append(_data[i]);
+                _ = builder.Append(data[i]);
                 _ = builder.Append(", ");
             }
-            if (_length > 0) { _ = builder.Append(_data[_length - 1]); }
+            if (length > 0) { _ = builder.Append(data[length - 1]); }
             _ = builder.Append(']');
 
             return builder.ToString();
@@ -565,22 +568,22 @@ namespace ShortTools.MagicContainer
             StringBuilder builder = new StringBuilder();
 
             _ = builder.Append('[');
-            for (int i = 0; i < _maxLength - 1; i++)
+            for (int i = 0; i < maxLength - 1; i++)
             {
-                _ = builder.Append(_dataIndex[i]);
+                _ = builder.Append(dataIndex[i]);
                 _ = builder.Append(", ");
             }
-            if (_maxLength > 0) { _ = builder.Append(_dataIndex[_maxLength - 1]); }
+            if (maxLength > 0) { _ = builder.Append(dataIndex[maxLength - 1]); }
             _ = builder.AppendLine("]");
 
 
             _ = builder.Append('[');
-            for (int i = 0; i < _maxLength - 1; i++)
+            for (int i = 0; i < maxLength - 1; i++)
             {
-                _ = builder.Append(_ID[i]);
+                _ = builder.Append(ID[i]);
                 _ = builder.Append(", ");
             }
-            if (_maxLength > 0) { _ = builder.Append(_ID[_maxLength - 1]); }
+            if (maxLength > 0) { _ = builder.Append(ID[maxLength - 1]); }
             _ = builder.AppendLine("]");
 
 
