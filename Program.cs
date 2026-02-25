@@ -182,7 +182,7 @@ namespace ShortTools.MagicContainer
 
 
         /// <summary>
-        /// Removes the first item that is .Equals to the given item
+        /// Removes the first item that is <see cref="object.Equals(object?)"/> to the given item
         /// </summary>
         /// <param name="item">The item to be removed</param>
         /// <returns>True if successfully removed, false if not.</returns>
@@ -190,6 +190,7 @@ namespace ShortTools.MagicContainer
         {
             for (int i = 0; i < _length; i++)
             {
+                if (_dataIndex[i] >= _length) { continue; } // been deleted
                 if (item?.Equals(_data[i]) == true)
                 {
                     _ = RemoveAt(_ID[i]);
@@ -623,60 +624,27 @@ namespace ShortTools.MagicContainer
         {
             SMContainer<int> container = new SMContainer<int>([0, 4, 7, 10, 12, 13, 16, 200, 19, 34]);
 
-            Console.WriteLine($"{container.ToString(true)}\n");
+            Console.WriteLine($"{container}\n");
 
-            Thread modifierThread = new Thread(new ThreadStart(() => ModifyContainer(container)));
-            modifierThread.Start();
+            container.Remove(19);
+            container.Add(11);
+            container.Add(24);
+            container.Remove(10);
+            container.Add(25);
+            container.Remove(4);
 
-            Thread.Sleep(100);
+            Console.WriteLine(container.ToString(true));
+            container.Remove(16);
+            Console.WriteLine(container.ToString(true));
+            bool success = container.Remove(4);
+            Console.WriteLine(success);
 
-            int count = 0;
-            foreach (int value in container)
-            {
-                count++;
-                Console.WriteLine($"Value: {value}");
-            }
-            Console.WriteLine($"Count: {count}");
 
-            foreach (int value in container)
-            {
-                Console.WriteLine($"Value: {value}");
-            }
+            Console.WriteLine($"{container}");
 
-            Thread.Sleep(100);
-
-            running = false;
-            modifierThread.Join();
-            _ = modifierCompleted.WaitOne();
-
-            Console.WriteLine($"{container.ToString(true)}\n");
 
             Console.WriteLine("Ending");
         }
 
-#pragma warning disable CA5394 // use cryptographically secure random, not required here
-        private static void ModifyContainer(SMContainer<int> container)
-        {
-            Random random = new Random();
-
-            bool adding = false;
-
-            while (running)
-            {
-                if (adding)
-                {
-                    _ = container.Add(random.Next(100));
-                }
-                else
-                {
-                    int index = random.Next(container.Length);
-                    _ = container.RemoveAt(index);
-                }
-                adding = !adding;
-            }
-            _ = modifierCompleted.Set();
-            Console.WriteLine("Completed");
-        }
-#pragma warning restore CA5394
     }
 }
