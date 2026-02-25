@@ -10,13 +10,13 @@
     <PackageId>ShortTools.MagicContainer</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>ShortTools.MagicContainer</Title>
-    <Version>1.0.3</Version>
+    <Version>1.0.3.1</Version>
     <Authors>petitecoyote759</Authors>
     <PackageProjectUrl>https://github.com/petitecoyote759/MagicContainer</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/petitecoyote759/MagicContainer</RepositoryUrl>
     <StartupObject>ShortTools.MagicContainer.Tester</StartupObject>
-    <PackageLicenseFile>UNLICENSE.txt</PackageLicenseFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>

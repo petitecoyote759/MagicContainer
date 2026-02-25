@@ -89,7 +89,7 @@ namespace ShortTools.MagicContainer
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public bool RemoveAt(int index)
         {
-            if (index >= _length) { return false; }
+            if (index >= _maxLength) { return false; }
 
             int dIndex = _dataIndex[index]; // index of the data
             if (dIndex >= _length) { return false; } // already deleted
@@ -627,17 +627,18 @@ namespace ShortTools.MagicContainer
             Console.WriteLine($"{container}\n");
 
             container.Remove(19);
+            Console.WriteLine(container.Length);
             container.Add(11);
+            Console.WriteLine(container.Length);
             container.Add(24);
+            Console.WriteLine(container.Length);
             container.Remove(10);
+            Console.WriteLine(container.Length);
             container.Add(25);
+            Console.WriteLine(container.Length);
             container.Remove(4);
+            Console.WriteLine(container.Length);
 
-            Console.WriteLine(container.ToString(true));
-            container.Remove(16);
-            Console.WriteLine(container.ToString(true));
-            bool success = container.Remove(4);
-            Console.WriteLine(success);
 
 
             Console.WriteLine($"{container}");
