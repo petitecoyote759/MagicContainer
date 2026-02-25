@@ -1,4 +1,4 @@
-﻿# ShortTools.12MagicContainer
+﻿# ShortTools.MagicContainer
 This project was inspired by "Pezzza's Work" on YouTube, specifically this 
 [Video](https://youtu.be/L4xOCvELWlU?si=x7v8hrSUxCz1ISot). The main benefit of using this container rather than another container such as a list is that this container has a O(1) access, deletion, and insertion. This makes it ideal for games where you are constantly removing and adding enemies, especially if the amount of enemies stays roughly consistent and the size of the enemy class is significantly bigger than 2 integers.
 
